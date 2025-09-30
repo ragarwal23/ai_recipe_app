@@ -23,6 +23,22 @@ llm = ChatVertexAI(
     temperature=0.0,
 )
 
+def _invoke_llm_chain(prompt_template: str, text: str, error_message: str, max_chars: int = 8000):
+    """Helper function to invoke an LLM chain with error handling."""
+    if not text:
+        return error_message
+
+    trimmed_text = text[:max_chars]
+    prompt = PromptTemplate.from_template(prompt_template)
+    chain = LLMChain(llm=llm, prompt=prompt)
+
+    try:
+        result = chain.invoke({"text": trimmed_text})
+        return result.get('text', error_message)
+    except Exception as e:
+        st.error(f"LLM chain failed: {e}")
+        return error_message
+
 def summarize_recipe(text):
     if not text:
         return "Could not retrieve recipe summary."
@@ -32,21 +48,9 @@ def summarize_recipe(text):
     Recipe:
     {text}
     """
-    MAX_CHARS = 8000          # ≈ 2k tokens
-    trimmed   = text[:MAX_CHARS]
-
-    prompt = PromptTemplate.from_template(prompt_template)
-    chain = LLMChain(llm=llm, prompt=prompt)
-    try:
-        summary = chain.invoke({"text": trimmed})['text']
-        return summary
-    except Exception as e:
-        st.error(f"Error summarizing recipe: {e}")
-        return "Could not summarize recipe."
+    return _invoke_llm_chain(prompt_template, text, "Could not summarize recipe.")
 
 def extract_ingredients(text):
-    if not text:
-        return "Could not retrieve ingredients."
     prompt_template = """
     You are a world-class chef, skilled at identifying ingredients and their quantities from recipes.  
     Please extract all ingredients **with their exact measurements** from the following recipe and list them in bullet-point format like:
@@ -55,17 +59,7 @@ def extract_ingredients(text):
     Recipe:
     {text}
     """
-    MAX_CHARS = 8000          # ≈ 2k tokens
-    trimmed   = text[:MAX_CHARS]
-
-    prompt = PromptTemplate.from_template(prompt_template)
-    chain = LLMChain(llm=llm, prompt=prompt)
-    try:
-        ingredients = chain.invoke({"text": trimmed})['text']
-        return ingredients
-    except Exception as e:
-        st.error(f"Error extracting ingredients: {e}")
-        return "Could not extract ingredients."
+    return _invoke_llm_chain(prompt_template, text, "Could not extract ingredients.")
 
 def get_structured_ingredients_via_llm(ingredient_text: str, max_chars: int = 6000):
     """

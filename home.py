@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from utilis import *
+from utils import *
 from genaiutils import *
 
 # --- Streamlit App ---
