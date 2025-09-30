@@ -66,28 +66,31 @@ def parse_search_results(rsp):
 
 def search_prioritized_websites(query, prioritized_websites):
     """
-    Searches for a query within a list of prioritized websites.
+    Searches for a query within a list of prioritized websites using a single search query.
 
     Args:
         query (str): The user's search query.
         prioritized_websites (dict): A dictionary of website names and their URLs.
 
     Returns:
-        tuple: A tuple containing (snippet, title, clean_link) if found, otherwise None.
+        tuple: A tuple containing (snippet, title, link) if found, otherwise None.
     """
-    for name, base_url in prioritized_websites.items():
-        website_query = f"site:{base_url} {query}"
-        rsp = search.invoke(website_query)
+    # Construct a single search query with OR operators for all prioritized sites
+    sites_query_part = " OR ".join([f"site:{url.split('//')[1]}" for url in prioritized_websites.values()])
+    full_query = f"({query}) ({sites_query_part})"
 
-        # Try to extract all URLs from the response
-        clean_links = parse_search_results(rsp)
+    rsp = search.invoke(full_query)
+    clean_links = parse_search_results(rsp)
 
-        if clean_links:
-            link = clean_links[0]
-            title = f"{name} recipe"  # Or extract title with regex if needed
-            snippet = ""  # Optional: add regex for snippet
-            return (snippet, title, link)
-
+    if clean_links:
+        link = clean_links[0]
+        # Determine which prioritized site the link belongs to for a better title
+        title = "Prioritized Recipe"  # Default title
+        for name, base_url in prioritized_websites.items():
+            if base_url in link:
+                title = f"{name} recipe"
+                break
+        return ("", title, link)
     return None
 
 

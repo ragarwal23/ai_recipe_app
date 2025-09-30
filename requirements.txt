@@ -1,0 +1,5 @@
+streamlit==1.43.2
+google-genai==1.7.0
+langchain-google-vertexai==2.0.15
+langchain-core==0.3.45
+beautifulsoup4
